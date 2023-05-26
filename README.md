@@ -1,4 +1,4 @@
-# Title: Jack Sparrow's Submarine Control Room
+# Title: Sparrow Submarine Shenanigans
 
 ## Introduction:
 Jack Sparrow's Submarine Control Room is a web application that allows submarines to register and provides real-time updates on their status. The application leverages the power of React, PubNub to create a seamless and interactive experience for managing submarines.
