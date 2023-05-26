@@ -1,0 +1,23 @@
+.submarine-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width:60%;
+    margin:0 auto;
+}
+  
+.submarine-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+  
+.active {
+    background-color: lightgreen;
+}
+
+.hidden {
+    background-color: lightgray;
+}

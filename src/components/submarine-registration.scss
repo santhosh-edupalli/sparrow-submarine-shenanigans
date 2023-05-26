@@ -1,0 +1,14 @@
+.registration-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+
+    .register-button {
+        margin: 20px auto;
+        display: flex;
+    }
+    .error{
+        color: red;
+    }
+}

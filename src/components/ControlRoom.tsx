@@ -1,26 +1,23 @@
 import React, { useEffect, useState } from 'react';
+import { List, Button } from 'antd';
+import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { usePubNub } from 'pubnub-react';
 import { sparrowChannel, submarineRegistrationChannel } from '../services/external/pubsub';
-import { PresenceEvent } from 'pubnub';
 import { Submarine } from './App';
+import './control-room.scss';
 
-interface ControlRoomProps {
-    submarines: Submarine[];
-    setSubmarines: React.Dispatch<React.SetStateAction<Submarine[]>>
-}
-const ControlRoom: React.FC<ControlRoomProps> = ({submarines, setSubmarines}) => {
+const ControlRoom: React.FC = () => {
     const pubNub = usePubNub();
+    const [submarines, setSubmarines ] = useState<Submarine[]>([]);
     
     const handleMessage = (messageEvent: { channel: any; message: { action: string; shipName: string; }; }) => {
         if (messageEvent.channel === submarineRegistrationChannel) {
-            // Process the message received from the SubmarineRegistration component
             const { action, shipName } = messageEvent.message as {
-              action: string;
-              shipName: string;
+                action: string;
+                shipName: string;
             };
   
             if (action === 'register') {
-                // Check if the ship name is already registered with Jack Sparrow
                 const existingSubmarine = submarines.find((sub) => sub.name === shipName);
                 if (existingSubmarine) {
                     const message = {
@@ -30,20 +27,30 @@ const ControlRoom: React.FC<ControlRoomProps> = ({submarines, setSubmarines}) =>
                     pubNub.publish({ channel : submarineRegistrationChannel, message })
                     return
                 }
-                // Add the registered submarine to the list
                 const newSubmarine: Submarine = {
-                  name: shipName,
-                  active: true,
-                  registeredTime: new Date(),
+                    name: shipName,
+                    active: true,
+                    registeredTime: new Date(),
                 };
                 setSubmarines(prevSubmarines => [...prevSubmarines, newSubmarine]);
-
                 const message = {
                     action: 'register-success',
-                    shipName,
+                    newSubmarine,
+                    submarineList: [...submarines, newSubmarine]
                 };
                 pubNub.publish({ channel : submarineRegistrationChannel, message })
                 return
+            }
+            if(action === 'self-hide') {
+                let subIndex = submarines.findIndex(sub => sub.name === shipName);
+                const newSubmarines = [...submarines]
+                newSubmarines[subIndex] = {...newSubmarines[subIndex], active:false};
+                setSubmarines(newSubmarines);
+                const message = {
+                    action: 'self-hide-success',
+                    shipName,
+                };
+                pubNub.publish({ channel : sparrowChannel, message })
             }
         }
     }
@@ -51,7 +58,6 @@ const ControlRoom: React.FC<ControlRoomProps> = ({submarines, setSubmarines}) =>
     useEffect(() => {
         const listenerParams = { 
           message: handleMessage,
-        //   presence : handlePresence, 
         }
         pubNub.addListener(listenerParams);
         pubNub.subscribe({
@@ -69,17 +75,45 @@ const ControlRoom: React.FC<ControlRoomProps> = ({submarines, setSubmarines}) =>
             shipName : name,
         };
         pubNub.publish({ channel : sparrowChannel, message })
+        setSubmarines(prevSubmarines =>
+            prevSubmarines.map(submarine =>
+                submarine.name == name ? { ...submarine, active: false } : submarine
+            )
+        );
     }
   return (
-    <div>
-      <h2>Active Submarines</h2>
-      {submarines.filter(sub => sub.active).map(submarine => (
-        <div key={submarine.name}>
-          <p>Name: {submarine.name}</p>
-          <p>Status: {submarine.active ? 'Active' : 'Inactive'}</p>
-          <button onClick={() => handleHideSubmarine(submarine.name)}>Hide</button>
-        </div>
-      ))}
+    <div className="submarine-list">
+        <h3>Active Submarines</h3>
+        <List
+            dataSource={submarines.filter(sub => sub.active)}
+            renderItem={submarine => (
+            <List.Item>
+                <List.Item.Meta
+                title={submarine.name}
+                description={`Status: ${submarine.active ? 'Active' : 'Inactive'}`}
+                />
+                <Button
+                type="primary"
+                icon={<EyeInvisibleOutlined />}
+                onClick={() => handleHideSubmarine(submarine.name)}
+                >
+                Hide
+                </Button>
+            </List.Item>
+            )}
+        />
+        <h3>Hidden Submarines</h3>
+        <List
+            dataSource={submarines.filter(sub => !sub.active)}
+            renderItem={submarine => (
+            <List.Item>
+                <List.Item.Meta
+                title={submarine.name}
+                description={`Status: ${submarine.active ? 'Active' : 'Inactive'}`}
+                />
+            </List.Item>
+            )}
+        />
     </div>
   );
 };
